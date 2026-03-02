@@ -225,7 +225,7 @@ Content-Type: application/json
 }
 ```
 
-> `imageBase64` is optional. Supported formats: JPEG, PNG, WEBP, GIF. Max size: 5 MB.
+> `imageBase64` is optional. Supported formats: JPEG, PNG, WEBP, GIF. Max size: 5 MB. When provided, `imageUrl` in the response is a **pre-signed S3 URL** valid for 1 hour.
 
 **Validation rules**
 

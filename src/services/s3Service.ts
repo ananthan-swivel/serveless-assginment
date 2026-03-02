@@ -1,8 +1,15 @@
 /// <reference types="node" />
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { extractMimeType, extractBase64Payload } from "../validation/adSchema";
 
 const client = new S3Client({});
+
+const PRESIGNED_URL_EXPIRES_IN = 60 * 60; // 1 hour
 
 /** Derives a file extension from a MIME type (e.g. "image/png" → "png"). */
 function mimeToExtension(mimeType: string): string {
@@ -42,6 +49,11 @@ export async function uploadImage(
     }),
   );
 
-  const region = process.env.AWS_REGION || "us-east-1";
-  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+  const signedUrl = await getSignedUrl(
+    client,
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
+    { expiresIn: PRESIGNED_URL_EXPIRES_IN },
+  );
+
+  return signedUrl;
 }
