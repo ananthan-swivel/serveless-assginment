@@ -1,7 +1,7 @@
 # Ads API — Serverless Demo
 
 A minimal AWS Serverless "Ads API" built with **Node.js + TypeScript**.  
-Authenticated users can create an ad record. On creation the service:
+Users can sign up, log in, and create ad records. On ad creation the service:
 
 1. Validates input (title, price, optional base64 image) via **Zod**.
 2. Stores the record in **Amazon DynamoDB**.
@@ -66,37 +66,30 @@ After deployment, SAM prints three outputs:
 
 ---
 
-## Authentication — obtaining a JWT token
+## Authentication flow
 
-### Register a user
+The API exposes two public endpoints for authentication. After login, use the `idToken` as a `Bearer` token to call protected routes.
 
 ```bash
-aws cognito-idp sign-up \
-  --client-id <UserPoolClientId> \
-  --username user@example.com \
-  --password MyPass1234
+# 1. Sign up
+curl -X POST https://<ApiUrl>/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "MyPass123"}'
 
+# 2. Confirm your account (one-time — check email or use the AWS CLI)
 aws cognito-idp admin-confirm-sign-up \
   --user-pool-id <UserPoolId> \
   --username user@example.com
-```
 
-### Get a token
+# 3. Log in
+curl -X POST https://<ApiUrl>/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "MyPass123"}'
+# → returns { "idToken": "...", "accessToken": "...", "refreshToken": "..." }
 
-```bash
-aws cognito-idp initiate-auth \
-  --auth-flow USER_PASSWORD_AUTH \
-  --client-id <UserPoolClientId> \
-  --auth-parameters USERNAME=user@example.com,PASSWORD=MyPass1234
-```
-
-Copy the `IdToken` from the response.
-
-### Call the API
-
-```bash
+# 4. Call a protected endpoint
 curl -X POST https://<ApiUrl>/ads \
-  -H "Authorization: Bearer <IdToken>" \
+  -H "Authorization: Bearer <idToken>" \
   -H "Content-Type: application/json" \
   -d '{"title": "My Ad", "price": 99.99}'
 ```
@@ -109,9 +102,7 @@ curl -X POST https://<ApiUrl>/ads \
 sam local start-api
 ```
 
-Pass any JWT (or a [mocked one](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-using-invoke.html)) in the `Authorization` header.  
-For quick local testing without a real Cognito token, you can temporarily
-disable the authorizer check in the handler (see `src/handlers/createAd.ts`).
+For local testing, the Cognito authorizer is not enforced by SAM — pass any string as the `Authorization` header.
 
 ---
 
@@ -128,12 +119,105 @@ Thresholds: **80 % lines / statements / functions**, **70 % branches**.
 
 ## API Reference
 
+### `POST /auth/signup`
+
+Registers a new user. No authentication required.
+
+**URL**
+
+```
+POST https://<ApiUrl>/auth/signup
+```
+
+**Body**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "MyPass123"
+}
+```
+
+**Validation rules**
+
+| Field      | Rules                                                      |
+| ---------- | ---------------------------------------------------------- |
+| `email`    | Required — must be a valid email address                   |
+| `password` | Required — min 8 chars, at least one uppercase, one number |
+
+**Responses**
+
+| Status | Meaning                                                  |
+| ------ | -------------------------------------------------------- |
+| 201    | User registered — check email to confirm account         |
+| 400    | Missing body, validation failure, or email already taken |
+| 500    | Unexpected server error                                  |
+
+**Example response**
+
+```json
+{
+  "message": "User registered successfully — check your email to confirm your account"
+}
+```
+
+---
+
+### `POST /auth/login`
+
+Authenticates an existing confirmed user and returns JWT tokens. No authentication required.
+
+**URL**
+
+```
+POST https://<ApiUrl>/auth/login
+```
+
+**Body**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "MyPass123"
+}
+```
+
+**Responses**
+
+| Status | Meaning                               |
+| ------ | ------------------------------------- |
+| 200    | Login successful — returns JWT tokens |
+| 400    | Missing body or validation failure    |
+| 401    | Invalid email or password             |
+| 403    | Account not confirmed (check email)   |
+| 500    | Unexpected server error               |
+
+**Example response**
+
+```json
+{
+  "idToken": "<Cognito IdToken — use this as the Bearer token for /ads>",
+  "accessToken": "<Cognito AccessToken>",
+  "refreshToken": "<Cognito RefreshToken>"
+}
+```
+
+---
+
 ### `POST /ads`
+
+Creates an ad. Requires a valid Cognito `idToken` from the login response.
+
+**URL**
+
+```
+POST https://<ApiUrl>/ads
+```
 
 **Headers**
 
 ```
-Authorization: Bearer <Cognito IdToken>
+Authorization: Bearer <idToken>
 Content-Type: application/json
 ```
 
@@ -141,11 +225,21 @@ Content-Type: application/json
 
 ```json
 {
-  "title": "string (required, non-empty)",
-  "price": "number (required, > 0)",
-  "imageBase64": "data:<mime>;base64,<payload> (optional, ≤ 5 MB, JPEG/PNG/WEBP/GIF)"
+  "title": "Vintage Camera",
+  "price": 149.99,
+  "imageBase64": "data:image/jpeg;base64,<base64-payload>"
 }
 ```
+
+> `imageBase64` is optional. Supported formats: JPEG, PNG, WEBP, GIF. Max size: 5 MB.
+
+**Validation rules**
+
+| Field         | Rules                                                          |
+| ------------- | -------------------------------------------------------------- |
+| `title`       | Required — non-empty string                                    |
+| `price`       | Required — positive number                                     |
+| `imageBase64` | Optional — valid data URI (`data:<mime>;base64,...`), max 5 MB |
 
 **Responses**
 
@@ -156,6 +250,18 @@ Content-Type: application/json
 | 401    | No valid Cognito JWT supplied            |
 | 500    | Unexpected server error                  |
 
+**Example response**
+
+```json
+{
+  "adId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "userId": "cognito-sub-uuid",
+  "title": "Vintage Camera",
+  "price": 149.99,
+  "createdAt": "2026-03-02T10:00:00.000Z"
+}
+```
+
 ---
 
 ## Project structure
@@ -163,11 +269,11 @@ Content-Type: application/json
 ```
 src/
   constants/    HTTP status codes and messages
-  handlers/     Lambda handler (createAd.ts)
-  services/     DynamoDB, S3, SNS clients
-  types/        Shared TypeScript types
+  handlers/     Lambda handlers (signup, login, createAd)
+  services/     DynamoDB, S3, SNS, Cognito clients
+  types/        Shared TypeScript types and interfaces
   utils/        Structured JSON logger
-  validation/   Zod schema + base64 helpers
+  validation/   Zod schemas (ads + auth)
 tests/
   handlers/     Handler unit tests
   services/     Service unit tests
@@ -182,6 +288,7 @@ template.yaml   SAM IaC (Cognito, APIGW, Lambda, DynamoDB, S3, SNS)
 ## Known issues / limitations
 
 - No `GET /ads` or `DELETE /ads` endpoints — create-only scope.
+- Signup requires email confirmation via Cognito; `admin-confirm-sign-up` can be used in development to skip this.
 - No pagination.
 - Images are validated client-side by byte estimate; actual decoded size may vary slightly.
 - `sam local start-api` does not evaluate Cognito authorizers — use the deployed stack for end-to-end auth testing.

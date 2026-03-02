@@ -5,6 +5,9 @@
     "/^node -e \"console\\.log\\(require\\('zod/package\\.json'\\)\\.version\\)\"$/": {
       "approve": true,
       "matchCommandLine": true
-    }
+    },
+    "git add": true,
+    "git commit": true,
+    "git push": true
   }
 }

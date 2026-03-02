@@ -1,9 +1,13 @@
-export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+export type LogLevel = "info" | "warn" | "error" | "debug";
 
 export class Logger {
   constructor(private requestId?: string) {}
 
-  private format(level: LogLevel, message: string, extra?: Record<string, unknown>) {
+  private format(
+    level: LogLevel,
+    message: string,
+    extra?: Record<string, unknown>,
+  ) {
     const payload = {
       timestamp: new Date().toISOString(),
       level,
@@ -15,19 +19,19 @@ export class Logger {
   }
 
   info(message: string, extra?: Record<string, unknown>) {
-    console.log(this.format('info', message, extra));
+    console.log(this.format("info", message, extra));
   }
 
   warn(message: string, extra?: Record<string, unknown>) {
-    console.warn(this.format('warn', message, extra));
+    console.warn(this.format("warn", message, extra));
   }
 
   error(message: string, extra?: Record<string, unknown>) {
-    console.error(this.format('error', message, extra));
+    console.error(this.format("error", message, extra));
   }
 
   debug(message: string, extra?: Record<string, unknown>) {
-    console.log(this.format('debug', message, extra));
+    console.log(this.format("debug", message, extra));
   }
 }
 
