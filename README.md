@@ -110,6 +110,8 @@ npm test               # runs Jest with coverage
 Coverage is collected in `coverage/lcov-report/index.html`.  
 Thresholds: **80 % lines / statements / functions**, **70 % branches**.
 
+The test suite covers all handlers (`signup`, `login`, `createAd`) and all services (`dynamoService`, `s3Service`, `snsService`, `cognitoService`) — 50 tests across 7 suites.
+
 ---
 
 ## API Reference
@@ -269,8 +271,8 @@ src/
   utils/        Structured JSON logger
   validation/   Zod schemas (ads + auth)
 tests/
-  handlers/     Handler unit tests
-  services/     Service unit tests
+  handlers/     Handler unit tests (signup, login, createAd)
+  services/     Service unit tests (dynamo, s3, sns, cognito)
 template.yaml   SAM IaC (Cognito, APIGW, Lambda, DynamoDB, S3, SNS)
 .github/
   workflows/
