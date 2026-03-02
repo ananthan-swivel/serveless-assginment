@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
 import { createLogger } from "../utils/logger";
-import { signUpUser } from "../services/cognitoService";
+import { signUpUser, adminConfirmUser } from "../services/cognitoService";
 import { SignupSchema } from "../validation/authSchema";
 import { HttpStatus, HttpMessage } from "../constants/httpStatus";
 
@@ -38,9 +38,13 @@ export const handler = async (
     const clientId = process.env.COGNITO_CLIENT_ID;
     if (!clientId) throw new Error("COGNITO_CLIENT_ID env var not set");
 
-    await signUpUser(email, password, clientId);
+    const userPoolId = process.env.USER_POOL_ID;
+    if (!userPoolId) throw new Error("USER_POOL_ID env var not set");
 
-    logger.info("User signed up", { email });
+    await signUpUser(email, password, clientId);
+    await adminConfirmUser(email, userPoolId);
+
+    logger.info("User signed up and confirmed", { email });
     return {
       statusCode: HttpStatus.CREATED,
       body: JSON.stringify({ message: HttpMessage.USER_CREATED }),

@@ -16,8 +16,7 @@ export const HttpMessage = {
   CREATED: "Ad created successfully",
   UNAUTHORIZED: "Unauthorized",
   INTERNAL_SERVER_ERROR: "Internal server error",
-  USER_CREATED:
-    "User registered successfully — check your email to confirm your account",
+  USER_CREATED: "User registered successfully",
   USER_ALREADY_EXISTS: "An account with that email already exists",
   INVALID_CREDENTIALS: "Invalid email or password",
   USER_NOT_CONFIRMED:

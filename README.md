@@ -71,23 +71,18 @@ After deployment, SAM prints three outputs:
 The API exposes two public endpoints for authentication. After login, use the `idToken` as a `Bearer` token to call protected routes.
 
 ```bash
-# 1. Sign up
+# 1. Sign up (account is confirmed automatically — no email required)
 curl -X POST https://<ApiUrl>/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "MyPass123"}'
 
-# 2. Confirm your account (one-time — check email or use the AWS CLI)
-aws cognito-idp admin-confirm-sign-up \
-  --user-pool-id <UserPoolId> \
-  --username user@example.com
-
-# 3. Log in
+# 2. Log in
 curl -X POST https://<ApiUrl>/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "MyPass123"}'
 # → returns { "idToken": "...", "accessToken": "...", "refreshToken": "..." }
 
-# 4. Call a protected endpoint
+# 3. Call a protected endpoint
 curl -X POST https://<ApiUrl>/ads \
   -H "Authorization: Bearer <idToken>" \
   -H "Content-Type: application/json" \
@@ -149,7 +144,7 @@ POST https://<ApiUrl>/auth/signup
 
 | Status | Meaning                                                  |
 | ------ | -------------------------------------------------------- |
-| 201    | User registered — check email to confirm account         |
+| 201    | User registered and confirmed — ready to log in          |
 | 400    | Missing body, validation failure, or email already taken |
 | 500    | Unexpected server error                                  |
 
@@ -157,7 +152,7 @@ POST https://<ApiUrl>/auth/signup
 
 ```json
 {
-  "message": "User registered successfully — check your email to confirm your account"
+  "message": "User registered successfully"
 }
 ```
 
@@ -189,7 +184,6 @@ POST https://<ApiUrl>/auth/login
 | 200    | Login successful — returns JWT tokens |
 | 400    | Missing body or validation failure    |
 | 401    | Invalid email or password             |
-| 403    | Account not confirmed (check email)   |
 | 500    | Unexpected server error               |
 
 **Example response**
@@ -288,7 +282,7 @@ template.yaml   SAM IaC (Cognito, APIGW, Lambda, DynamoDB, S3, SNS)
 ## Known issues / limitations
 
 - No `GET /ads` or `DELETE /ads` endpoints — create-only scope.
-- Signup requires email confirmation via Cognito; `admin-confirm-sign-up` can be used in development to skip this.
+- No email verification — accounts are confirmed automatically on signup.
 - No pagination.
 - Images are validated client-side by byte estimate; actual decoded size may vary slightly.
 - `sam local start-api` does not evaluate Cognito authorizers — use the deployed stack for end-to-end auth testing.
