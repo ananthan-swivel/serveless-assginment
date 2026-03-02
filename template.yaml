@@ -8,6 +8,56 @@ Globals:
     Runtime: nodejs20.x
 
 Resources:
+  # ── Auth functions (public — no Cognito authorizer) ──────────────────────
+
+  SignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/handlers/signup.handler
+      CodeUri: .
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref AdsCognitoUserPoolClient
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: cognito-idp:SignUp
+              Resource: !GetAtt AdsCognitoUserPool.Arn
+      Events:
+        SignupApi:
+          Type: Api
+          Properties:
+            Path: /auth/signup
+            Method: post
+            RestApiId: !Ref AdsApi
+            Auth:
+              Authorizer: NONE
+
+  LoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/handlers/login.handler
+      CodeUri: .
+      Environment:
+        Variables:
+          COGNITO_CLIENT_ID: !Ref AdsCognitoUserPoolClient
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: cognito-idp:InitiateAuth
+              Resource: !GetAtt AdsCognitoUserPool.Arn
+      Events:
+        LoginApi:
+          Type: Api
+          Properties:
+            Path: /auth/login
+            Method: post
+            RestApiId: !Ref AdsApi
+            Auth:
+              Authorizer: NONE
+
+  # ── Ads function (protected — Cognito authorizer) ─────────────────────────
+
   AdsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -34,6 +84,8 @@ Resources:
             RestApiId: !Ref AdsApi
             Auth:
               Authorizer: CognitoAuthorizer
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
 
   AdsApi:
     Type: AWS::Serverless::Api
