@@ -5,14 +5,7 @@ const config: Config = {
   testEnvironment: "node",
   testMatch: ["**/tests/**/*.test.ts"],
   collectCoverage: true,
-  collectCoverageFrom: [
-    "src/**/*.ts",
-    // Exclude new auth files until tests are added
-    "!src/handlers/signup.ts",
-    "!src/handlers/login.ts",
-    "!src/services/cognitoService.ts",
-    "!src/validation/authSchema.ts",
-  ],
+  collectCoverageFrom: ["src/**/*.ts"],
   coverageThreshold: {
     global: {
       branches: 70,
