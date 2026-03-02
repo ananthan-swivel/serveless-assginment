@@ -74,6 +74,10 @@ Resources:
             BucketName: !Ref AdsBucket
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt AdsCreatedTopic.TopicName
+        - Statement:
+            - Effect: Allow
+              Action: s3:GetObject
+              Resource: !Sub "arn:aws:s3:::${AdsBucket}/*"
       Events:
         CreateAdApi:
           Type: Api
