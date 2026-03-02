@@ -33,7 +33,7 @@ jobs:
         run: npm run lint
 
       - name: Test
-        run: npm test
+        run: npm test -- --silent
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
