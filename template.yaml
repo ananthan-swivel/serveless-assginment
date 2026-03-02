@@ -11,7 +11,7 @@ Resources:
   AdsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/createAd.handler
+      Handler: dist/handlers/createAd.handler
       CodeUri: .
       Environment:
         Variables:
