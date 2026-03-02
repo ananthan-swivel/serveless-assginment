@@ -1,6 +1,7 @@
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
+  AdminConfirmSignUpCommand,
   InitiateAuthCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { AuthTokens } from "../types";
@@ -18,6 +19,18 @@ export async function signUpUser(
       Username: email,
       Password: password,
       UserAttributes: [{ Name: "email", Value: email }],
+    }),
+  );
+}
+
+export async function adminConfirmUser(
+  email: string,
+  userPoolId: string,
+): Promise<void> {
+  await client.send(
+    new AdminConfirmSignUpCommand({
+      UserPoolId: userPoolId,
+      Username: email,
     }),
   );
 }

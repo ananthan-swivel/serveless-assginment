@@ -18,10 +18,13 @@ Resources:
       Environment:
         Variables:
           COGNITO_CLIENT_ID: !Ref AdsCognitoUserPoolClient
+          USER_POOL_ID: !Ref AdsCognitoUserPool
       Policies:
         - Statement:
             - Effect: Allow
-              Action: cognito-idp:SignUp
+              Action:
+                - cognito-idp:SignUp
+                - cognito-idp:AdminConfirmSignUp
               Resource: !GetAtt AdsCognitoUserPool.Arn
       Events:
         SignupApi:
