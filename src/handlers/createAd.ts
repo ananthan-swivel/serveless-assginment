@@ -15,6 +15,18 @@ export const handler = async (
   const logger = createLogger(requestId);
 
   try {
+    // ── Authentication ────────────────────────────────────────────────────
+    const userId = event.requestContext?.authorizer?.["claims"]?.sub as
+      | string
+      | undefined;
+    if (!userId) {
+      logger.warn("Unauthorized – missing Cognito claims");
+      return {
+        statusCode: HttpStatus.UNAUTHORIZED,
+        body: JSON.stringify({ message: HttpMessage.UNAUTHORIZED }),
+      };
+    }
+
     if (!event.body) {
       logger.warn("Missing body");
       return {
@@ -48,6 +60,7 @@ export const handler = async (
 
     const ad: AdRecord = {
       adId,
+      userId,
       title: payload.title,
       price: payload.price,
       imageUrl,

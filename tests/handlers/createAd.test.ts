@@ -23,15 +23,46 @@ function buildOversizedDataUri(): string {
   return `data:image/jpeg;base64,${oversizedPayload}`;
 }
 
-function makeEvent(body: unknown, requestId = "req-test"): any {
+function makeEvent(
+  body: unknown,
+  requestId = "req-test",
+  userId = "user-123",
+): any {
   return {
     body: JSON.stringify(body),
-    requestContext: { requestId },
+    requestContext: {
+      requestId,
+      authorizer: {
+        claims: { sub: userId },
+      },
+    },
   };
 }
 
 describe("createAd handler", () => {
   beforeEach(() => jest.clearAllMocks());
+
+  // ── Authentication ────────────────────────────────────────────────────
+
+  it("returns 401 when no Cognito claims are present", async () => {
+    const res = await handler({
+      body: JSON.stringify({ title: "Ad", price: 10 }),
+      requestContext: { requestId: "r" },
+    } as any);
+
+    expect(res.statusCode).toBe(HttpStatus.UNAUTHORIZED);
+    const body = JSON.parse(res.body);
+    expect(body.message).toBe(HttpMessage.UNAUTHORIZED);
+  });
+
+  it("includes userId in the response body", async () => {
+    const res = await handler(
+      makeEvent({ title: "Auth Ad", price: 20 }, "r", "user-abc"),
+    );
+    expect(res.statusCode).toBe(HttpStatus.CREATED);
+    const body = JSON.parse(res.body);
+    expect(body.userId).toBe("user-abc");
+  });
 
   // ── Happy paths ──────────────────────────────────────────────────────────
 
@@ -72,7 +103,10 @@ describe("createAd handler", () => {
   it("returns 400 when body is missing", async () => {
     const res = await handler({
       body: null,
-      requestContext: { requestId: "r" },
+      requestContext: {
+        requestId: "r",
+        authorizer: { claims: { sub: "user-123" } },
+      },
     } as any);
 
     expect(res.statusCode).toBe(HttpStatus.BAD_REQUEST);

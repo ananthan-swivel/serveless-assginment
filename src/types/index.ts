@@ -3,6 +3,7 @@ export type { CreateAdInput } from "../validation/adSchema";
 
 export interface AdRecord {
   adId: string;
+  userId: string;
   title: string;
   price: number;
   imageUrl?: string;

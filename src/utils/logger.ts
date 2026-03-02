@@ -25,6 +25,10 @@ export class Logger {
   error(message: string, extra?: Record<string, any>) {
     console.error(this.format('error', message, extra));
   }
+
+  debug(message: string, extra?: Record<string, any>) {
+    console.log(this.format('debug', message, extra));
+  }
 }
 
 export const createLogger = (requestId?: string) => new Logger(requestId);
