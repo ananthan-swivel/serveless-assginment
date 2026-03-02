@@ -32,11 +32,44 @@ Resources:
             Path: /ads
             Method: post
             RestApiId: !Ref AdsApi
+            Auth:
+              Authorizer: CognitoAuthorizer
 
   AdsApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: dev
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt AdsCognitoUserPool.Arn
+
+  AdsCognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: AdsUserPool
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: true
+          RequireLowercase: true
+
+  AdsCognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: AdsWebClient
+      UserPoolId: !Ref AdsCognitoUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
 
   AdsTable:
     Type: AWS::DynamoDB::Table
@@ -60,3 +93,11 @@ Outputs:
   ApiUrl:
     Description: API Gateway endpoint URL
     Value: !Sub "https://${AdsApi}.execute-api.${AWS::Region}.amazonaws.com/dev"
+
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref AdsCognitoUserPool
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID (use to obtain JWT tokens)
+    Value: !Ref AdsCognitoUserPoolClient

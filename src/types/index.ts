@@ -1,11 +1,9 @@
-export interface CreateAdInput {
-  title: string;
-  price: number;
-  imageBase64?: string;
-}
+// CreateAdInput is derived from the Zod schema — single source of truth
+export type { CreateAdInput } from "../validation/adSchema";
 
 export interface AdRecord {
   adId: string;
+  userId: string;
   title: string;
   price: number;
   imageUrl?: string;

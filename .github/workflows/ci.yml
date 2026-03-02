@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Lint
+        run: npm run lint
+
       - name: Test
         run: npm test
 
@@ -44,6 +47,9 @@ jobs:
 
       - name: SAM Build
         run: sam build
+
+      - name: SAM Validate
+        run: sam validate
 
       - name: SAM Deploy
         if: github.ref == 'refs/heads/main'

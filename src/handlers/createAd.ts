@@ -1,31 +1,55 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
-import { CreateAdInput, AdRecord } from "../types";
+import { AdRecord } from "../types";
 import { createLogger } from "../utils/logger";
 import { putAd } from "../services/dynamoService";
 import { uploadImage } from "../services/s3Service";
 import { publishAdCreated } from "../services/snsService";
+import { CreateAdSchema } from "../validation/adSchema";
+import { HttpStatus, HttpMessage } from "../constants/httpStatus";
 
 export const handler = async (
-  event: APIGatewayProxyEvent
+  event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> => {
   const requestId = event.requestContext?.requestId || uuidv4();
   const logger = createLogger(requestId);
 
   try {
+    // ── Authentication ────────────────────────────────────────────────────
+    const userId = event.requestContext?.authorizer?.["claims"]?.sub as
+      | string
+      | undefined;
+    if (!userId) {
+      logger.warn("Unauthorized – missing Cognito claims");
+      return {
+        statusCode: HttpStatus.UNAUTHORIZED,
+        body: JSON.stringify({ message: HttpMessage.UNAUTHORIZED }),
+      };
+    }
+
     if (!event.body) {
       logger.warn("Missing body");
-      return { statusCode: 400, body: JSON.stringify({ message: "Missing body" }) };
+      return {
+        statusCode: HttpStatus.BAD_REQUEST,
+        body: JSON.stringify({ message: HttpMessage.MISSING_BODY }),
+      };
     }
 
-    const payload = JSON.parse(event.body) as CreateAdInput;
-    if (!payload.title || typeof payload.title !== "string") {
-      return { statusCode: 400, body: JSON.stringify({ message: "Invalid title" }) };
-    }
-    if (payload.price == null || typeof payload.price !== "number") {
-      return { statusCode: 400, body: JSON.stringify({ message: "Invalid price" }) };
+    const parsed = JSON.parse(event.body);
+    const result = CreateAdSchema.safeParse(parsed);
+
+    if (!result.success) {
+      logger.warn("Validation failed", { errors: result.error.issues });
+      return {
+        statusCode: HttpStatus.BAD_REQUEST,
+        body: JSON.stringify({
+          message: HttpMessage.VALIDATION_ERROR,
+          errors: result.error.issues,
+        }),
+      };
     }
 
+    const payload = result.data;
     const adId = uuidv4();
     let imageUrl: string | undefined;
 
@@ -36,6 +60,7 @@ export const handler = async (
 
     const ad: AdRecord = {
       adId,
+      userId,
       title: payload.title,
       price: payload.price,
       imageUrl,
@@ -46,11 +71,15 @@ export const handler = async (
     await publishAdCreated(ad);
 
     logger.info("Ad created", { adId });
-    return { statusCode: 201, body: JSON.stringify(ad) };
-  } catch (err: any) {
-    const message = err?.message || "Internal error";
+    return { statusCode: HttpStatus.CREATED, body: JSON.stringify(ad) };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : HttpMessage.INTERNAL_SERVER_ERROR;
     const loggerErr = createLogger(event.requestContext?.requestId);
     loggerErr.error("Handler error", { message });
-    return { statusCode: 500, body: JSON.stringify({ message }) };
+    return {
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      body: JSON.stringify({ message }),
+    };
   }
 };
