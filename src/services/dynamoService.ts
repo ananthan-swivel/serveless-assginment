@@ -10,7 +10,7 @@ export async function putAd(ad: AdRecord): Promise<void> {
 
   const params = {
     TableName: table,
-    Item: marshall(ad),
+    Item: marshall(ad, { removeUndefinedValues: true }),
   };
 
   await client.send(new PutItemCommand(params));

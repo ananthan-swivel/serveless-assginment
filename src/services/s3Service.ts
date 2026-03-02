@@ -1,24 +1,44 @@
+/// <reference types="node" />
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { v4 as uuidv4 } from "uuid";
+import { extractMimeType, extractBase64Payload } from "../validation/adSchema";
 
 const client = new S3Client({});
 
+/** Derives a file extension from a MIME type (e.g. "image/png" → "png"). */
+function mimeToExtension(mimeType: string): string {
+  const map: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+  return map[mimeType] ?? "jpg";
+}
+
+/**
+ * Uploads an image to S3 from a data URI (e.g. "data:image/png;base64,...").
+ * The MIME type and file extension are derived from the data URI prefix.
+ */
 export async function uploadImage(
   adId: string,
-  base64: string,
+  dataUri: string,
 ): Promise<string> {
   const bucket = process.env.ADS_BUCKET;
   if (!bucket) throw new Error("ADS_BUCKET env var not set");
 
-  const buffer = Buffer.from(base64, "base64");
-  const key = `ads/${adId}.jpg`;
+  const mimeType = extractMimeType(dataUri);
+  const rawBase64 = extractBase64Payload(dataUri);
+  const extension = mimeToExtension(mimeType);
+
+  const buffer = Buffer.from(rawBase64, "base64");
+  const key = `ads/${adId}.${extension}`;
 
   await client.send(
     new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: buffer,
-      ContentType: "image/jpeg",
+      ContentType: mimeType,
     }),
   );
 
