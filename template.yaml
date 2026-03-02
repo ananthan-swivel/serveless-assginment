@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Ads API SAM template
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs20.x
+
+Resources:
+  AdsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/createAd.handler
+      CodeUri: .
+      Environment:
+        Variables:
+          ADS_TABLE: !Ref AdsTable
+          ADS_BUCKET: !Ref AdsBucket
+          SNS_TOPIC_ARN: !Ref AdsCreatedTopic
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+        - S3WritePolicy:
+            BucketName: !Ref AdsBucket
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt AdsCreatedTopic.TopicName
+      Events:
+        CreateAdApi:
+          Type: Api
+          Properties:
+            Path: /ads
+            Method: post
+            RestApiId: !Ref AdsApi
+
+  AdsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+
+  AdsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AdsTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: adId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: adId
+          KeyType: HASH
+
+  AdsBucket:
+    Type: AWS::S3::Bucket
+
+  AdsCreatedTopic:
+    Type: AWS::SNS::Topic
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${AdsApi}.execute-api.${AWS::Region}.amazonaws.com/dev"
