@@ -3,6 +3,18 @@ jest.mock("@aws-sdk/client-s3", () => ({
     .fn()
     .mockImplementation(() => ({ send: jest.fn().mockResolvedValue({}) })),
   PutObjectCommand: jest.fn(),
+  GetObjectCommand: jest.fn().mockImplementation((args: unknown) => args),
+}));
+
+jest.mock("@aws-sdk/s3-request-presigner", () => ({
+  getSignedUrl: jest
+    .fn()
+    .mockImplementation(
+      (_client: unknown, cmd: { Bucket: string; Key: string }) =>
+        Promise.resolve(
+          `https://${cmd.Bucket}.s3.us-east-1.amazonaws.com/${cmd.Key}?X-Amz-Signature=test`,
+        ),
+    ),
 }));
 
 import { uploadImage } from "../../src/services/s3Service";
