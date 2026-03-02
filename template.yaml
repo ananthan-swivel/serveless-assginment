@@ -30,8 +30,6 @@ Resources:
             Path: /auth/signup
             Method: post
             RestApiId: !Ref AdsApi
-            Auth:
-              Authorizer: NONE
 
   LoginFunction:
     Type: AWS::Serverless::Function
@@ -53,8 +51,6 @@ Resources:
             Path: /auth/login
             Method: post
             RestApiId: !Ref AdsApi
-            Auth:
-              Authorizer: NONE
 
   # ── Ads function (protected — Cognito authorizer) ─────────────────────────
 
@@ -92,7 +88,6 @@ Resources:
     Properties:
       StageName: dev
       Auth:
-        DefaultAuthorizer: CognitoAuthorizer
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt AdsCognitoUserPool.Arn
