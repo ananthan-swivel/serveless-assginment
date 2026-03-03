@@ -153,13 +153,5 @@ Outputs:
     Value: !Ref AdsCognitoUserPool
 
   UserPoolClientId:
-    Description: Cognito App Client ID (no secret)
-    Value: !Ref AdsCognitoUserPoolClient
-
-  UserPoolId:
-    Description: Cognito User Pool ID
-    Value: !Ref AdsCognitoUserPool
-
-  UserPoolClientId:
     Description: Cognito User Pool Client ID (use to obtain JWT tokens)
     Value: !Ref AdsCognitoUserPoolClient
