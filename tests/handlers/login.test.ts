@@ -33,7 +33,9 @@ describe("login handler", () => {
   it("returns 200 with tokens on successful login", async () => {
     mockLoginUser.mockResolvedValue(MOCK_TOKENS);
 
-    const res = await handler(makeEvent({ email: "user@example.com", password: "MyPass123" }));
+    const res = await handler(
+      makeEvent({ email: "user@example.com", password: "MyPass123" }),
+    );
 
     expect(res.statusCode).toBe(HttpStatus.OK);
     const body = JSON.parse(res.body);
@@ -62,7 +64,9 @@ describe("login handler", () => {
   // ── Email validation ─────────────────────────────────────────────────────
 
   it("returns 400 when email is invalid", async () => {
-    const res = await handler(makeEvent({ email: "not-an-email", password: "pass" }));
+    const res = await handler(
+      makeEvent({ email: "not-an-email", password: "pass" }),
+    );
 
     expect(res.statusCode).toBe(HttpStatus.BAD_REQUEST);
     const body = JSON.parse(res.body);
@@ -80,7 +84,9 @@ describe("login handler", () => {
   // ── Password validation ──────────────────────────────────────────────────
 
   it("returns 400 when password is empty", async () => {
-    const res = await handler(makeEvent({ email: "user@example.com", password: "" }));
+    const res = await handler(
+      makeEvent({ email: "user@example.com", password: "" }),
+    );
 
     expect(res.statusCode).toBe(HttpStatus.BAD_REQUEST);
     expect(JSON.parse(res.body).message).toBe(HttpMessage.VALIDATION_ERROR);
@@ -101,7 +107,9 @@ describe("login handler", () => {
     });
     mockLoginUser.mockRejectedValueOnce(err);
 
-    const res = await handler(makeEvent({ email: "user@example.com", password: "WrongPass1" }));
+    const res = await handler(
+      makeEvent({ email: "user@example.com", password: "WrongPass1" }),
+    );
 
     expect(res.statusCode).toBe(HttpStatus.UNAUTHORIZED);
     expect(JSON.parse(res.body).message).toBe(HttpMessage.INVALID_CREDENTIALS);
@@ -113,7 +121,9 @@ describe("login handler", () => {
     });
     mockLoginUser.mockRejectedValueOnce(err);
 
-    const res = await handler(makeEvent({ email: "user@example.com", password: "MyPass123" }));
+    const res = await handler(
+      makeEvent({ email: "user@example.com", password: "MyPass123" }),
+    );
 
     expect(res.statusCode).toBe(HttpStatus.FORBIDDEN);
     expect(JSON.parse(res.body).message).toBe(HttpMessage.USER_NOT_CONFIRMED);
@@ -122,7 +132,9 @@ describe("login handler", () => {
   it("returns 500 on unexpected service error", async () => {
     mockLoginUser.mockRejectedValueOnce(new Error("Cognito unavailable"));
 
-    const res = await handler(makeEvent({ email: "user@example.com", password: "MyPass123" }));
+    const res = await handler(
+      makeEvent({ email: "user@example.com", password: "MyPass123" }),
+    );
 
     expect(res.statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(JSON.parse(res.body).message).toBe("Cognito unavailable");
@@ -131,7 +143,9 @@ describe("login handler", () => {
   it("returns 500 when COGNITO_CLIENT_ID env var is not set", async () => {
     delete process.env.COGNITO_CLIENT_ID;
 
-    const res = await handler(makeEvent({ email: "user@example.com", password: "MyPass123" }));
+    const res = await handler(
+      makeEvent({ email: "user@example.com", password: "MyPass123" }),
+    );
 
     expect(res.statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(JSON.parse(res.body).message).toContain("COGNITO_CLIENT_ID");

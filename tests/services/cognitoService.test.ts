@@ -7,11 +7,17 @@ jest.mock("@aws-sdk/client-cognito-identity-provider", () => ({
     send: mockSend,
   })),
   SignUpCommand: jest.fn().mockImplementation((args: unknown) => args),
-  AdminConfirmSignUpCommand: jest.fn().mockImplementation((args: unknown) => args),
+  AdminConfirmSignUpCommand: jest
+    .fn()
+    .mockImplementation((args: unknown) => args),
   InitiateAuthCommand: jest.fn().mockImplementation((args: unknown) => args),
 }));
 
-import { signUpUser, adminConfirmUser, loginUser } from "../../src/services/cognitoService";
+import {
+  signUpUser,
+  adminConfirmUser,
+  loginUser,
+} from "../../src/services/cognitoService";
 
 describe("cognitoService", () => {
   beforeEach(() => {
@@ -58,7 +64,11 @@ describe("cognitoService", () => {
       },
     });
 
-    const tokens = await loginUser("user@example.com", "MyPass123", "client-id");
+    const tokens = await loginUser(
+      "user@example.com",
+      "MyPass123",
+      "client-id",
+    );
 
     expect(tokens).toEqual({
       idToken: "id-tok",
